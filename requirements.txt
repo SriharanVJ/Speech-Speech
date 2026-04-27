@@ -1,0 +1,38 @@
+# Speech-to-Speech with Barge-In
+# Full pipeline requirements
+
+# Core framework
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+websockets>=12.0
+
+# Audio processing
+numpy>=1.24.0
+torch>=2.0.0
+torchaudio>=2.0.0
+soundfile>=0.12.0
+
+# VAD (Voice Activity Detection)
+silero-vad>=0.1.0
+
+# ASR (Automatic Speech Recognition)
+# transformers (for Whisper)
+transformers>=4.35.0
+accelerate>=0.24.0
+# NeMo (for Parakeet) - optional
+# nemo-toolkit[asr]>=1.20.0
+
+# TTS (Text-to-Speech)
+# Kokoro
+kokoro>=0.1.0
+
+# LLM (Large Language Model)
+google-genai>=0.3.0
+
+# Utilities
+python-dotenv>=1.0.0
+pydantic>=2.0.0
+
+# Optional: for monitoring
+# prometheus-client>=0.19.0
+# opentelemetry-api>=1.20.0
