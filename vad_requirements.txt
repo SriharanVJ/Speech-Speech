@@ -1,0 +1,18 @@
+# VAD and Turn Detection Requirements
+# Install with: pip install -r vad_requirements.txt
+
+# ONNX Runtime for ML model inference
+onnxruntime>=1.16.0
+
+# Optional: For GPU acceleration
+# onnxruntime-gpu>=1.16.0
+
+# HuggingFace Hub for downloading models
+huggingface_hub>=0.19.0
+
+# Optional: Transformers for Whisper feature extraction
+# (fallback to scipy if not available)
+transformers>=4.35.0
+
+# Optional: scipy for fallback feature extraction
+scipy>=1.11.0
