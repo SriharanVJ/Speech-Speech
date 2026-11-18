@@ -11,6 +11,7 @@ numpy>=1.24.0
 torch>=2.0.0
 torchaudio>=2.0.0
 soundfile>=0.12.0
+scipy>=1.11.0  # 🔥 Phase 1: Audio preprocessing (high-pass filter, noise gate)
 
 # VAD (Voice Activity Detection)
 silero-vad>=0.1.0

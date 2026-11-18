@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Agent - AI Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+        }
+
+        .container {
+            width: 95%;
+            max-width: 700px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, #00d2ff 0%, #3a7bd5 50%, #00d2ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { background-position: 0% center; }
+            50% { background-position: 200% center; }
+        }
+
+        .status-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 8px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ef4444;
+            transition: all 0.3s ease;
+        }
+
+        .status-dot.connected {
+            background: #10b981;
+            box-shadow: 0 0 12px #10b981;
+        }
+
+        .status-dot.listening {
+            background: #3b82f6;
+            box-shadow: 0 0 15px #3b82f6;
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-dot.processing {
+            background: #f59e0b;
+            box-shadow: 0 0 15px #f59e0b;
+            animation: pulse 1s infinite;
+        }
+
+        .status-dot.speaking {
+            background: #8b5cf6;
+            box-shadow: 0 0 15px #8b5cf6;
+            animation: pulse 0.8s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.15); }
+        }
+
+        .visualizer-container {
+            height: 140px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 16px;
+            margin: 24px 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #visualizer {
+            width: 100%;
+            height: 100%;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .btn {
+            padding: 14px 32px;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(245, 87, 108, 0.6);
+        }
+
+        .chat-container {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .message {
+            margin-bottom: 16px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            background: rgba(59, 130, 246, 0.2);
+            border-left: 3px solid #3b82f6;
+        }
+
+        .message.assistant {
+            background: rgba(139, 92, 246, 0.2);
+            border-left: 3px solid #8b5cf6;
+        }
+
+        .message.system {
+            background: rgba(16, 185, 129, 0.15);
+            border-left: 3px solid #10b981;
+            font-size: 12px;
+        }
+
+        .message-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+            opacity: 0.7;
+        }
+
+        .message-content {
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        .settings {
+            margin-top: 20px;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+        }
+
+        .settings-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .settings-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .settings-label {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .toggle {
+            position: relative;
+            width: 48px;
+            height: 24px;
+        }
+
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.2);
+            transition: 0.3s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        .toggle input:checked + .toggle-slider {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .toggle input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+        }
+
+        .stats {
+            display: flex;
+            gap: 16px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            flex: 1;
+            min-width: 120px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 4px;
+        }
+
+        .tool-call {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: rgba(245, 158, 11, 0.2);
+            border-radius: 20px;
+            font-size: 12px;
+            color: #fbbf24;
+            margin-top: 6px;
+        }
+
+        .tool-call::before {
+            content: "🔧";
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎙️ Voice Agent</h1>
+            <div class="status-bar">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Disconnected</span>
+            </div>
+        </div>
+
+        <div class="visualizer-container">
+            <canvas id="visualizer"></canvas>
+        </div>
+
+        <div id="partialTranscript" style="text-align: center; min-height: 24px; color: rgba(255,255,255,0.5); font-style: italic; margin-bottom: 16px;">
+            ... (partial transcript will appear here)
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-primary" id="connectBtn" onclick="toggleConnection()">
+                <span>🔌 Connect</span>
+            </button>
+            <button class="btn btn-danger" id="micBtn" onclick="toggleMic()" disabled>
+                <span>🎤 Start Talking</span>
+            </button>
+        </div>
+
+        <div class="settings">
+            <div class="settings-row">
+                <span class="settings-label">Enable Voice Agent (LLM + TTS)</span>
+                <label class="toggle">
+                    <input type="checkbox" id="voiceGatewayToggle" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="settings-row">
+                <span class="settings-label">Chatbot ID</span>
+                <input type="text" id="chatbotId" value="default"
+                       style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+                              border-radius: 8px; padding: 6px 12px; color: white; width: 120px; font-size: 13px;">
+            </div>
+        </div>
+
+        <div class="chat-container" id="chatContainer">
+            <div class="message system">
+                <div class="message-label">System</div>
+                <div class="message-content">Click "Connect" to start the voice agent</div>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-value" id="turnCount">0</div>
+                <div class="stat-label">Conversations</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="interruptionCount">0</div>
+                <div class="stat-label">Interruptions</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="toolCallCount">0</div>
+                <div class="stat-label">Tool Calls</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const WS_URL = 'ws://localhost:8006/stream/asr';
+        const SAMPLE_RATE = 16000;
+        const CHUNK_SIZE = 4096;
+
+        // State
+        let ws = null;
+        let mediaRecorder = null;
+        let audioContext = null;
+        let analyser = null;
+        let isMicActive = false;
+        let isConnected = false;
+        let audioQueue = [];
+        let isPlayingAudio = false;
+        let currentGenerationId = null;
+
+        // TTS Audio Playback
+        let ttsAudioContext = null;
+        let ttsAudioQueue = [];
+        let isPlayingTTS = false;
+        let currentTTSGenerationId = null;
+
+        // Stats
+        let stats = {
+            turns: 0,
+            interruptions: 0,
+            toolCalls: 0
+        };
+
+        // DOM Elements
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const connectBtn = document.getElementById('connectBtn');
+        const micBtn = document.getElementById('micBtn');
+        const chatContainer = document.getElementById('chatContainer');
+        const canvas = document.getElementById('visualizer');
+        const ctx = canvas.getContext('2d');
+
+        // Resize canvas
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+            canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Visualizer
+        function drawVisualizer(dataArray) {
+            const width = canvas.offsetWidth;
+            const height = canvas.offsetHeight;
+            const bufferLength = dataArray.length;
+            const barWidth = (width / bufferLength) * 2.5;
+            let barHeight;
+            let x = 0;
+
+            ctx.fillStyle = 'rgba(0, 0, 0, 0)';
+            ctx.fillRect(0, 0, width, height);
+
+            for (let i = 0; i < bufferLength; i++) {
+                barHeight = (dataArray[i] / 255) * height * 0.8;
+
+                const gradient = ctx.createLinearGradient(0, height - barHeight, 0, height);
+                gradient.addColorStop(0, '#00d2ff');
+                gradient.addColorStop(0.5, '#3a7bd5');
+                gradient.addColorStop(1, '#667eea');
+
+                ctx.fillStyle = gradient;
+                ctx.fillRect(x, height - barHeight, barWidth, barHeight);
+
+                x += barWidth + 1;
+            }
+        }
+
+        // WebSocket
+        function connect() {
+            const voiceGatewayEnabled = document.getElementById('voiceGatewayToggle').checked;
+            const chatbotId = document.getElementById('chatbotId').value;
+
+            const url = `${WS_URL}?voice_gateway_enabled=${voiceGatewayEnabled}&chatbot_id=${chatbotId}`;
+            ws = new WebSocket(url);
+
+            ws.onopen = () => {
+                isConnected = true;
+                updateStatus('connected', 'Connected');
+                connectBtn.querySelector('span').textContent = '🔌 Disconnect';
+                micBtn.disabled = false;
+                addMessage('system', 'Connected to voice agent. Click "Start Talking" to begin.');
+            };
+
+            ws.onclose = () => {
+                isConnected = false;
+                updateStatus('disconnected', 'Disconnected');
+                connectBtn.querySelector('span').textContent = '🔌 Connect';
+                micBtn.disabled = true;
+                if (isMicActive) toggleMic();
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                addMessage('system', 'Connection error. Make sure the server is running.');
+            };
+
+            ws.onmessage = async (event) => {
+                // Check if message is binary (TTS audio)
+                if (event.data instanceof Blob) {
+                    console.log('🔊 Received TTS audio chunk:', event.data.size, 'bytes');
+                    // Handle TTS audio playback
+                    await playTTSAudio(event.data);
+                    return;
+                }
+
+                // Otherwise, parse as JSON
+                try {
+                    const data = JSON.parse(event.data);
+                    console.log('📨 Received:', data.type, data);
+                    handleServerMessage(data);
+                } catch (error) {
+                    console.error('Failed to parse message:', error, event.data);
+                }
+            };
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+
+        function toggleConnection() {
+            if (isConnected) {
+                disconnect();
+            } else {
+                connect();
+            }
+        }
+
+        // Message handling
+        async function handleServerMessage(data) {
+            switch (data.type) {
+                case 'connection_established':
+                    addMessage('system', `Session: ${data.session_id}`);
+                    break;
+
+                case 'speech_start':
+                    updateStatus('listening', 'Listening...');
+                    // Clear partial transcript at start of new speech
+                    partialDiv = document.getElementById('partialTranscript');
+                    if (partialDiv) {
+                        partialDiv.textContent = '... (listening)';
+                        partialDiv.style.color = 'rgba(255,255,255,0.5)';
+                        partialDiv.style.fontStyle = 'italic';
+                    }
+                    break;
+
+                case 'speech_end':
+                    updateStatus('processing', 'Processing...');
+                    break;
+
+                case 'partial':
+                    // Real-time partial transcript
+                    if (data.text) {
+                        partialDiv = document.getElementById('partialTranscript');
+                        if (partialDiv) {
+                            partialDiv.textContent = data.text;
+                            partialDiv.style.color = 'rgba(255,255,255,0.8)';
+                            partialDiv.style.fontStyle = 'normal';
+                        }
+                    }
+                    break;
+
+                case 'segment_completed':
+                    // Partial transcript - show it
+                    if (data.transcript || data.text) {
+                        partialDiv = document.getElementById('partialTranscript');
+                        if (partialDiv) {
+                            partialDiv.textContent = data.transcript || data.text;
+                        }
+                    }
+                    break;
+
+                case 'turn_end':
+                    // User finished speaking - add the transcribed text to chat
+                    // Get text from the partial transcript element (since it was built up from partial messages)
+                    partialDiv = document.getElementById('partialTranscript');
+                    if (partialDiv && partialDiv.textContent && !partialDiv.textContent.includes('...')) {
+                        const userText = partialDiv.textContent.trim();
+                        if (userText) {
+                            addMessage('user', userText);
+                            stats.turns++;
+                            updateStats();
+                        }
+                        // Clear partial after adding to chat
+                        partialDiv.textContent = '';
+                    }
+                    break;
+
+                case 'llm_token':
+                    // LLM streaming token
+                    updateStatus('processing', 'AI thinking...');
+                    break;
+
+                case 'tool_call':
+                    addMessage('system', `🔧 Tool: ${data.tool}`);
+                    stats.toolCalls++;
+                    updateStats();
+                    break;
+
+                case 'transcription':
+                    if (data.speaker === 'assistant') {
+                        addMessage('assistant', data.text);
+                    }
+                    break;
+
+                case 'assistant_response':
+                    // Assistant's final response (from voice gateway)
+                    if (data.text) {
+                        addMessage('assistant', data.text);
+                    }
+                    break;
+
+                case 'pipeline_done':
+                    updateStatus('connected', 'Connected');
+                    break;
+
+                case 'barge_in_event':
+                    addMessage('system', '🔴 Barge-in detected!');
+                    stats.interruptions++;
+                    updateStats();
+                    audioQueue = []; // Clear audio queue
+                    break;
+
+                case 'error':
+                    addMessage('system', `❌ Error: ${data.error || data.message || 'Unknown error'}`);
+                    updateStatus('connected', 'Connected');
+                    break;
+            }
+        }
+
+        // Audio playback
+        async function playAudio(arrayBuffer) {
+            try {
+                const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                const source = audioContext.createBufferSource();
+                source.buffer = audioBuffer;
+                source.connect(audioContext.destination);
+                source.start();
+            } catch (e) {
+                console.error('Audio playback error:', e);
+            }
+        }
+
+        function base64ToArrayBuffer(base64) {
+            const binaryString = atob(base64);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+
+        // Microphone
+        async function toggleMic() {
+            if (isMicActive) {
+                stopMic();
+            } else {
+                await startMic();
+            }
+        }
+
+        async function startMic() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        sampleRate: SAMPLE_RATE,
+                        channelCount: 1,
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                });
+
+                // Start audio context
+                audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: SAMPLE_RATE });
+                const source = audioContext.createMediaStreamSource(stream);
+
+                // Set up visualizer
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+                source.connect(analyser);
+
+                // Set up audio processor for sending data
+                const processor = audioContext.createScriptProcessor(4096, 1, 1);
+
+                // Resample to 16000Hz if needed
+                const targetSampleRate = 16000;
+                const ratio = targetSampleRate / audioContext.sampleRate;
+                const resampleBuffer = [];
+
+                processor.onaudioprocess = (e) => {
+                    if (ws && ws.readyState === WebSocket.OPEN && isMicActive) {
+                        const inputData = e.inputBuffer.getChannelData(0);
+
+                        // Simple resampling if sample rates don't match
+                        let audioToSend = inputData;
+                        if (ratio !== 1) {
+                            const outputLength = Math.floor(inputData.length * ratio);
+                            audioToSend = new Float32Array(outputLength);
+                            for (let i = 0; i < outputLength; i++) {
+                                const srcIndex = Math.floor(i / ratio);
+                                audioToSend[i] = inputData[srcIndex];
+                            }
+                        }
+
+                        // Convert float32 (-1 to 1) to int16
+                        const int16Data = new Int16Array(audioToSend.length);
+                        for (let i = 0; i < audioToSend.length; i++) {
+                            const s = Math.max(-1, Math.min(1, audioToSend[i]));
+                            int16Data[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                        }
+
+                        // Send as bytes
+                        if (int16Data.buffer.byteLength > 0) {
+                            ws.send(int16Data.buffer);
+                        }
+                    }
+                };
+
+                console.log('Audio setup:', { contextRate: audioContext.sampleRate, targetRate: targetSampleRate, ratio: ratio });
+
+                source.connect(processor);
+                processor.connect(audioContext.destination);
+
+                // Store for cleanup
+                mediaRecorder = { stop: () => {
+                    processor.disconnect();
+                    source.disconnect();
+                    stream.getTracks().forEach(track => track.stop());
+                }};
+
+                // Start visualizer
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                function draw() {
+                    if (isMicActive) {
+                        analyser.getByteFrequencyData(dataArray);
+                        drawVisualizer(dataArray);
+                    }
+                    requestAnimationFrame(draw);
+                }
+                draw();
+
+                isMicActive = true;
+                micBtn.querySelector('span').textContent = '⏹️ Stop';
+                micBtn.classList.remove('btn-danger');
+                micBtn.classList.add('btn-primary');
+                updateStatus('listening', 'Listening...');
+
+            } catch (error) {
+                console.error('Microphone error:', error);
+                addMessage('system', '❌ Microphone error: ' + error.message);
+            }
+        }
+
+        function stopMic() {
+            if (mediaRecorder) {
+                mediaRecorder.stop();
+                mediaRecorder = null;
+            }
+            if (audioContext) {
+                audioContext.close();
+                audioContext = null;
+            }
+            isMicActive = false;
+            micBtn.querySelector('span').textContent = '🎤 Start Talking';
+            micBtn.classList.remove('btn-primary');
+            micBtn.classList.add('btn-danger');
+            updateStatus('connected', 'Connected');
+        }
+
+        // UI Helpers
+        function updateStatus(state, text) {
+            statusDot.className = 'status-dot ' + state;
+            statusText.textContent = text;
+        }
+
+        function addMessage(type, content) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message ' + type;
+            messageDiv.innerHTML = `
+                <div class="message-label">${type}</div>
+                <div class="message-content">${content}</div>
+            `;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function updateStats() {
+            document.getElementById('turnCount').textContent = stats.turns;
+            document.getElementById('interruptionCount').textContent = stats.interruptions;
+            document.getElementById('toolCallCount').textContent = stats.toolCalls;
+        }
+
+        // TTS Audio Playback - Raw PCM16 from Kokoro (24000Hz sample rate)
+        async function playTTSAudio(blob) {
+            try {
+                // Initialize TTS audio context if needed
+                if (!ttsAudioContext) {
+                    ttsAudioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+                }
+
+                // Convert blob to array buffer
+                const arrayBuffer = await blob.arrayBuffer();
+
+                // Check if this is a WAV file (has "RIFF" header)
+                const uint8Array = new Uint8Array(arrayBuffer);
+                const isWav = uint8Array[0] === 82 && uint8Array[1] === 73 &&  // "RIFF"
+                              uint8Array[2] === 70 && uint8Array[3] === 70;
+
+                let audioBuffer;
+                if (isWav) {
+                    // Decode as WAV (Web Audio API handles WAV headers)
+                    audioBuffer = await ttsAudioContext.decodeAudioData(arrayBuffer);
+                } else {
+                    // Raw 16-bit PCM (2 bytes per sample) - this is what Kokoro sends
+                    const dataView = new DataView(arrayBuffer);
+                    const numSamples = arrayBuffer.byteLength / 2;  // 2 bytes per sample (16-bit)
+                    audioBuffer = ttsAudioContext.createBuffer(1, numSamples, 24000);
+                    const channelData = audioBuffer.getChannelData(0);
+
+                    // Convert 16-bit PCM to Float32 (-1 to 1)
+                    for (let i = 0; i < numSamples; i++) {
+                        const byteOffset = i * 2;
+
+                        // Read 16-bit signed integer (little-endian)
+                        const sample = dataView.getInt16(byteOffset, true);  // true = little-endian
+
+                        // Convert to float (-1 to 1)
+                        // Range for 16-bit signed: -32768 to 32767
+                        channelData[i] = sample / 32768.0;
+                    }
+                }
+
+                // Create source and play
+                const source = ttsAudioContext.createBufferSource();
+                source.buffer = audioBuffer;
+                source.connect(ttsAudioContext.destination);
+
+                // Update status
+                updateStatus('speaking', 'Assistant speaking...');
+                isPlayingTTS = true;
+
+                // Send tts_start event to server
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'tts_start' }));
+                }
+
+                // Play audio
+                source.onended = () => {
+                    isPlayingTTS = false;
+                    updateStatus('connected', 'Connected');
+
+                    // Send tts_end event to server
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ type: 'tts_end' }));
+                    }
+                };
+
+                source.start();
+            } catch (error) {
+                console.error('TTS playback error:', error);
+                isPlayingTTS = false;
+                updateStatus('connected', 'Connected');
+            }
+        }
+
+        // Initialize
+        addMessage('system', '👋 Welcome! Click "Connect" to start the voice agent.');
+    </script>
+</body>
+</html>
